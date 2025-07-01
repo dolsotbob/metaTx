@@ -10,9 +10,9 @@ import {
   encodeFunctionData,
   transfer,
   balanceOf,
-  excute,
-  excuteTransfer,
-  excuteApprove,
+  execute,
+  executeTransfer,
+  executeApprove,
 } from '../utils/ethers';
 
 describe('Metatx 검사 - excute를 통한 User1의 Gasless 적용', function () {
@@ -28,7 +28,7 @@ describe('Metatx 검사 - excute를 통한 User1의 Gasless 적용', function ()
     const prevUser2Balance = await balanceOf(user2.address);
     const prevUser1CoinBalance = await getBalance(user1.address);
 
-    await excuteTransfer(user2.address, ethers.parseEther('1'));
+    await executeTransfer(user2.address, ethers.parseEther('1'));
 
     const afterUser1CoinBalance = await getBalance(user1.address);
     const currentUser2Balance = await balanceOf(user2.address);
@@ -43,7 +43,7 @@ describe('Metatx 검사 - excute를 통한 User1의 Gasless 적용', function ()
     const weiBalance = await balanceOf(user1.address);
     const prevUser1CoinBalance = await getBalance(user1.address);
 
-    await excuteApprove(relayer.address, weiBalance);
+    await executeApprove(relayer.address, weiBalance);
 
     const allowance = await token.allowance(user1.address, relayer.address);
     const afterUser1CoinBalance = await getBalance(user1.address);

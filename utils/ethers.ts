@@ -26,7 +26,7 @@ export const user2 = new ethers.Wallet(user2PrivateKey, provider);
 export const forwarder = new ethers.Contract(
   forwarderAddress,
   forwarderAbi,
-  relayer
+  relayer // relayer가 서명자여야만 함 
 );
 // token 컨트랙트
 export const token = new ethers.Contract(tokenAddress, tokenAbi, relayer);
@@ -66,7 +66,7 @@ export const balanceOf = async (address: string) => {
 
 // 위의 코드는 수정하지 않습니다.
 
-export const excute = async (encodeFunctionData: string) => {
+export const execute = async (encodeFunctionData: string) => {
   try {
     /*
         Todo: excute 함수를 완성시킵니다. 
@@ -78,23 +78,68 @@ export const excute = async (encodeFunctionData: string) => {
         - 이 함수의 return 값은 없어도 괜찮습니다. 다만, excute를 실행시켜주세요.
         - ethers의 wait() 함수를 사용하여 컨트랙트 호출을 완료해주시기 바랍니다.(공식문서 검색)
     */
+    const deadline = Math.floor(Date.now() / 1000) + 3600;
+    const nonce = await forwarder.nonces(user1.address);
+
+    const domain = {
+      name: 'MyForwarder',
+      version: '1',
+      chainId: (await provider.getNetwork()).chainId,
+      verifyingContract: forwarderAddress,
+    };
+
+    const types = {
+      ForwardRequest: [
+        { name: 'from', type: 'address' },
+        { name: 'to', type: 'address' },
+        { name: 'value', type: 'uint256' },
+        { name: 'gas', type: 'uint256' },
+        { name: 'nonce', type: 'uint256' },
+        { name: 'deadline', type: 'uint48' },
+        { name: 'data', type: 'bytes' },
+      ],
+    };
+
+    const message = {
+      from: user1.address,
+      to: tokenAddress,
+      value: ethers.toBigInt(0),
+      nonce: nonce,
+      deadline: deadline,
+      gas: ethers.toBigInt(500000),
+      data: encodeFunctionData,
+    };
+
+    const signature = await user1.signTypedData(domain, types, message);
+
+    const request = {
+      ...message,
+      signature: signature,
+    };
+
+    const tx = await forwarder.execute(request);
+    await tx.wait();
   } catch (error) {
     console.error('Error in excute:', error);
   }
 };
 
-export const excuteTransfer = async (to: string, value: bigint) => {
+export const executeTransfer = async (to: string, value: bigint) => {
   try {
-    // Todo: 구현한 excute를 사용하여 token 컨트랙트의 transfer(to, value)를 gasless로 실행합니다. encodeFunctionData를 이용해주시기 바랍니다.
+    // Todo: 구현한 execute를 사용하여 token 컨트랙트의 transfer(to, value)를 gasless로 실행합니다. encodeFunctionData를 이용해주시기 바랍니다.
+    const data = encodeFunctionData('transfer', [to, value]);
+    await execute(data);
   } catch (error) {
-    console.error('Error in excuteTransfer:', error);
+    console.error('Error in executeTransfer:', error);
   }
 };
 
-export const excuteApprove = async (spender: string, value: bigint) => {
+export const executeApprove = async (spender: string, value: bigint) => {
   try {
-    // Todo: 구현한 excute를 사용하여 token 컨트랙트의 approve(spender, value)를 gasless로 실행합니다. encodeFunctionData를 이용해주시기 바랍니다.
+    // Todo: 구현한 execute를 사용하여 token 컨트랙트의 approve(spender, value)를 gasless로 실행합니다. encodeFunctionData를 이용해주시기 바랍니다.
+    const data = encodeFunctionData('approve', [spender, value]);
+    await execute(data);
   } catch (error) {
-    console.error('Error in tranferFrom:', error);
+    console.error('Error in executeApprove', error);
   }
 };
